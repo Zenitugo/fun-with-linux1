@@ -75,12 +75,12 @@ create_users_groups(){
 
 
     # Create personal group with the same name as the user
-    if ! getent group "$user" &>/dev/null; then
-        groupadd "$user"
+    if ! getent group "$users" &>/dev/null; then
+        groupadd "$users"
         if [[ $? -eq 0 ]]; then
-            echo "Created personal group $user for user $user." | tee -a "$log_file"
+            echo "Created personal group $users for user $users." | tee -a "$log_file"
         else
-            echo "Failed to create personal group $user." | tee -a "$log_file"
+            echo "Failed to create personal group $users." | tee -a "$log_file"
             return 1
         fi
     fi
