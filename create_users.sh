@@ -2,7 +2,7 @@
 
 
 
-list_of_users="/home/zenitugo/users.txt"
+list_of_users="/workspaces/users.txt"
 log_dir="/var/log"
 log_file="/var/log/user_management.log"
 password_dir="/var/secure"
