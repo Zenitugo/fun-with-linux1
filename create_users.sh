@@ -57,8 +57,8 @@ generate_password(){
 create_users_groups(){
     echo "Create users and assign them to their departments"
     # define the parameters
-    local users=$1
-    local groups=$2 
+    local users=$(echo "$1" | xargs) # Trim leading and trailing spaces
+    local groups=$(echo "$2" | xargs) # Trim leading and trailing spaces 
 
     # Check for empty or invalid usernames or groups
     if [[ -z "$users" || -z "$groups" ]]; then
@@ -102,7 +102,7 @@ create_users_groups(){
 
     
     # Create the user with the specified groups
-    useradd -m -G "$(echo "$groups" | tr -d '[:space:]')" "$users"
+    useradd -m -G "$(echo "$groups" | tr -d '[:space:]' | sed 's/,/,/g')" "$user"
     if [[ $? -ne 0 ]]; then
         echo "Failed to create user $users." | tee -a "$log_file"
         return 1
