@@ -158,7 +158,7 @@ fi
 while IFS=';' read -r users groups; do
    echo "Read line: user='$users', groups='$groups'" # Debugging
    # Skip empty lines
-    if [[ -z "$user" && -z "$groups" ]]; then
+    if [[ -z "$users" && -z "$groups" ]]; then
         continue
     fi
     create_users_groups "$users" "$groups"
