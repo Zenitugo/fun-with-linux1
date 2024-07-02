@@ -11,10 +11,10 @@ password_manager="/var/secure/user_passwords.csv"
 
 #Allow script run with sudo priviledges
 if [[ "$(id -u)" -ne 0 ]]; then
-echo "The script must be run with root priviledges"
-echo "Running as root"
-sudo -E "$0" "$@"
-exit
+    echo "The script must be run with root priviledges"
+    echo "Running as root"
+    sudo -E "$0" "$@"
+    exit
 fi
 
 # Check the log directory exist
@@ -57,9 +57,8 @@ generate_password(){
 create_users_groups(){
     echo "Create users and assign them to their departments"
     # define the parameters
-    users=$1
-    groups=$2 
-
+    local users=$1
+    local groups=$2 
 
     # Check for empty or invalid usernames or groups
     if [[ -z "$users" || -z "$groups" ]]; then
@@ -75,25 +74,35 @@ create_users_groups(){
     fi
 
 
+    # Create personal group with the same name as the user
+    if ! getent group "$user" &>/dev/null; then
+        groupadd "$user"
+        if [[ $? -eq 0 ]]; then
+            echo "Created personal group $user for user $user." | tee -a "$log_file"
+        else
+            echo "Failed to create personal group $user." | tee -a "$log_file"
+            return 1
+        fi
+    fi
+
     # Create groups if they don't exist
     IFS=',' read -ra group_list <<< "$groups"
     for group in "${group_list[@]}"; do
+        group=$(echo "$group" | xargs) # Trim leading and trailing spaces
         if ! getent group "$group" &>/dev/null ; then
             groupadd "$group"
-            echo "Created group $group." | tee -a "$log_file"
+            if [[ $? -eq 0 ]]; then
+                echo "Created group $group." | tee -a "$log_file"
+            else
+                echo "Failed to create group $group." | tee -a "$log_file"
+                return 1
+            fi
         fi
     done
 
     
-    # Create personal group with the same name as the username
-    if ! getent group "$users" &>/dev/null; then
-        groupadd "$users"
-        echo "Created personal group $users for user $users." | tee -a "$log_file"
-    fi
-
     # Create the user with the specified groups
-   
-        useradd -m -G "$groups" "$users"
+    useradd -m -G "$(echo "$groups" | tr -d '[:space:]')" "$users"
     if [[ $? -ne 0 ]]; then
         echo "Failed to create user $users." | tee -a "$log_file"
         return 1
@@ -146,7 +155,7 @@ fi
 
 # Calling the function
 
-while IFS=';' read -r user groups; do
+while IFS=';' read -r users groups; do
     create_users_groups "$users" "$groups"
 done < "$list_of_users"
 
