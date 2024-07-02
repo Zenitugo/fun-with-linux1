@@ -156,11 +156,11 @@ fi
 # Calling the function
 
 while IFS=';' read -r users groups; do
-   echo "Read line: user='$user', groups='$groups'" # Debugging
+   echo "Read line: user='$users', groups='$groups'" # Debugging
    # Skip empty lines
     if [[ -z "$user" && -z "$groups" ]]; then
         continue
-          fi
+    fi
     create_users_groups "$users" "$groups"
 done < "$list_of_users"
 
