@@ -1,9 +1,50 @@
 #!/bin/bash
 
 
+
 list_of_users="/home/zenitugo/users.txt"
+log_dir="/var/log"
 log_file="/var/log/user_management.log"
-password_manager="/var/secure/user_passwords.txt"
+password_dir="/var/secure"
+password_manager="/var/secure/user_passwords.csv"
+
+
+#Allow script run with sudo priviledges
+if [[ "$(id -u)" -ne 0 ]]; then
+echo "The script must be run with root priviledges"
+echo "Running as root"
+sudo -E "$0" "$@"
+exit
+fi
+
+# Check the log directory exist
+if [[ ! -d $log_dir ]]; then
+    echo "The log directory does not exist. Creating log directory...."
+    mkdir -p $log_dir
+else
+    echo "The log directory exist"
+fi
+
+
+
+# Check if the password directory exist
+if [[ ! -d $password_dir ]]; then
+    echo "The password directory does not exist. Creating password directory...."
+    mkdir -p $password_dir
+else
+    echo "The password directory exist"
+fi
+    
+
+# Ensure the log file exists and set the appropriate permissions
+touch "$log_file"
+chmod -R 755 "$log_file"
+
+
+# Clear previous logs and initialize the password CSV file with a header
+> "$log_file"
+echo "username,password" > "$password_manager"
+chmod 600 "$password_manager"
 
 
 # Generate random password function for users
@@ -20,24 +61,44 @@ create_users_groups(){
     groups=$2 
 
 
-    # check if user exist
-    if id -u "$users" &>/dev/null; then
-    echo "User $users already exists. Skipping." | tee -a "$log_file"
-    return 1
+    # Check for empty or invalid usernames or groups
+    if [[ -z "$users" || -z "$groups" ]]; then
+        echo "Skipping invalid line: $users, $groups" | tee -a "$log_file"
+        return 1
     fi
 
 
-   # Create groups if they don't exist
+    # check if user exist
+    if id -u "$users" &>/dev/null; then
+        echo "User $users already exists. Skipping." | tee -a "$log_file"
+        return 1
+    fi
+
+
+    # Create groups if they don't exist
     IFS=',' read -ra group_list <<< "$groups"
     for group in "${group_list[@]}"; do
-        if ! getent group "$group" &>/dev/null; then
+        if ! getent group "$group" &>/dev/null ; then
             groupadd "$group"
             echo "Created group $group." | tee -a "$log_file"
         fi
     done
 
+    
+    # Create personal group with the same name as the username
+    if ! getent group "$users" &>/dev/null; then
+        groupadd "$users"
+        echo "Created personal group $users for user $users." | tee -a "$log_file"
+    fi
+
     # Create the user with the specified groups
-    useradd -m -G "$groups" "$users"
+   
+        useradd -m -G "$groups" "$users"
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to create user $users." | tee -a "$log_file"
+        return 1
+    fi
+    
     echo "Created user $users with groups $groups." | tee -a "$log_file"
 
 
@@ -59,6 +120,8 @@ create_users_groups(){
     # Store the password securely
     echo "$users:$passwords" >> "$password_manager"
 
+    
+
     return 0
 
 }
@@ -67,7 +130,7 @@ create_users_groups(){
 
 # Main logic
 # Check if the file exist
-if [ -e "$list_of_users" ]; then
+if [[ -e "$list_of_users" ]]; then
     echo "The file $list_of_users exists."
 else
     echo "The file $list_of_users does not exist."
@@ -75,14 +138,16 @@ fi
 
 
 # Check if the file is not empty
-if [ -s "$list_of_users" ]; then
+if [[ -s "$list_of_users" ]]; then
     echo "The file $list_of_users is not empty"
 else
     echo "The file $list_of_users is empty"
 fi
 
+# Calling the function
+
 while IFS=';' read -r user groups; do
-    create_user_groups "$users" "$groups"
+    create_users_groups "$users" "$groups"
 done < "$list_of_users"
 
 echo "User creation process completed." | tee -a "$log_file"
