@@ -48,9 +48,15 @@ chmod 600 "$password_manager"
 
 
 # Generate random password function for users
+#generate_password(){
+    #tr -dc A-Za-z0-9 </dev/urandom | head -c 12
+#}
 generate_password(){
-    tr -dc A-Za-z0-9 </dev/urandom | head -c 12
+    urandom_data=$(head -c 32 /dev/urandom)
+    password=$(echo "$urandom_data" | openssl base64 | tr -dc A-Za-z0-9 | head -c 12)
+    echo "$password"
 }
+
 
 
 # Create users and groups function
