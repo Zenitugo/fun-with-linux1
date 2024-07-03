@@ -15,4 +15,4 @@
 
 
 ## Technical Article
-To further uderstand this script read this article 
+To further understand this script read this article [Hashnode](https://dhebbydavid.hashnode.dev/automation-with-bash-script)
