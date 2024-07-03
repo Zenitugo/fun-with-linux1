@@ -73,7 +73,8 @@ create_users_groups(){
         return 1
     fi
 
-
+     
+    # Create personal groups
     Create personal group with the same name as the user
     if ! getent group "$users" &>/dev/null; then
         groupadd "$users"
@@ -101,8 +102,8 @@ create_users_groups(){
     done
 
 
-    # Create the user with the specified groups
-    useradd -m "$users" -g "$users"
+    # Create the user with their name as primary groups
+    useradd -m "$users" -g "$users" 
     if [ $? -ne 0 ]; then
         echo "Failed to create user $users."
         return 1
@@ -110,15 +111,15 @@ create_users_groups(){
     echo "Created user $users with groups $groups."
 
     
-
-    Create the user with the specified groups
-    usermod -aG "$(echo "$groups" | tr -d '[:space:]' | sed 's/,/,/g')" "$users"
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to create user $users." | tee -a "$log_file"
-        return 1
+  
+    # Create the user with the specified groups
+    if usermod -aG "$group" "$users"; then
+        echo "Group "$group" assigned to user "$users""
+    else
+        echo "Group "$group" already assigned to user "$users""
     fi
-    
-    echo "Created user $users with groups $groups." | tee -a "$log_file"
+
+    echo "Created user $users with groups $group." | tee -a "$log_file"
 
 
     # Set permissions and ownership for the home directory
