@@ -74,7 +74,7 @@ create_users_groups(){
     fi
 
 
-    # Create personal group with the same name as the user
+    Create personal group with the same name as the user
     if ! getent group "$users" &>/dev/null; then
         groupadd "$users"
         if [[ $? -eq 0 ]]; then
@@ -100,9 +100,19 @@ create_users_groups(){
         fi
     done
 
-    
+
     # Create the user with the specified groups
-    useradd -m -G "$(echo "$groups" | tr -d '[:space:]' | sed 's/,/,/g')" "$user"
+    useradd -m "$users" -g "$users"
+    if [ $? -ne 0 ]; then
+        echo "Failed to create user $users."
+        return 1
+    fi
+    echo "Created user $users with groups $groups."
+
+    
+
+    Create the user with the specified groups
+    usermod -aG "$(echo "$groups" | tr -d '[:space:]' | sed 's/,/,/g')" "$users"
     if [[ $? -ne 0 ]]; then
         echo "Failed to create user $users." | tee -a "$log_file"
         return 1
