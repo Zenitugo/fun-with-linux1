@@ -1,13 +1,10 @@
 #!/bin/bash
 
-
-
-list_of_users="/home/zenitugo/users.txt"
+list_of_users=$1
 log_dir="/var/log"
 log_file="/var/log/user_management.log"
 password_dir="/var/secure"
 password_manager="/var/secure/user_passwords.csv"
-
 
 #Allow script run with sudo priviledges
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -16,6 +13,15 @@ if [[ "$(id -u)" -ne 0 ]]; then
     sudo -E "$0" "$@"
     exit
 fi
+
+
+# Check if the input file is provided and it it contains any parameters
+if [[ -z "$list_of_users" || ! -f "$list_of_users" ]]; then
+    echo "Usage: $0 <list_of_user>"
+    exit 1
+fi
+
+
 
 # Check the log directory exist
 if [[ ! -d $log_dir ]]; then
@@ -57,7 +63,9 @@ generate_password(){
     echo "$password"
 }
 
-
+logs_info(){
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_file"
+}
 
 # Create users and groups function
 create_users_groups(){
@@ -68,14 +76,14 @@ create_users_groups(){
 
     # Check for empty or invalid usernames or groups
     if [[ -z "$users" || -z "$groups" ]]; then
-        echo "Skipping invalid line: $users, $groups" | tee -a "$log_file"
+        logs_info "Skipping invalid line: $users, $groups" 
         return 1
     fi
 
 
     # check if user exist
     if id -u "$users" &>/dev/null; then
-        echo "User $users already exists. Skipping." | tee -a "$log_file"
+        logs_info "User $users already exists. Skipping." 
         return 1
     fi
 
@@ -85,9 +93,9 @@ create_users_groups(){
     if ! getent group "$users" &>/dev/null; then
         groupadd "$users"
         if [[ $? -eq 0 ]]; then
-            echo "Created personal group $users for user $users." | tee -a "$log_file"
+            logs_info "Created personal group $users for user $users." 
         else
-            echo "Failed to create personal group $users." | tee -a "$log_file"
+            logs_info "Failed to create personal group $users." 
             return 1
         fi
     fi
@@ -99,9 +107,9 @@ create_users_groups(){
         if ! getent group "$group" &>/dev/null ; then
             groupadd "$group"
             if [[ $? -eq 0 ]]; then
-                echo "Created group $group." | tee -a "$log_file"
+                logs_info "Created group $group." 
             else
-                echo "Failed to create group $group." | tee -a "$log_file"
+                logs_info "Failed to create group $group." 
                 return 1
             fi
         fi
@@ -122,19 +130,19 @@ create_users_groups(){
     for group in "${group_list[@]}"; do
         usermod -aG "$group" "$users"
         if [[ $? -eq 0 ]]; then
-            echo "Assigned user $users to group $group." | tee -a "$log_file"
+            logs_info "Assigned user $users to group $group."
         else
-            echo "Failed to assign user $users to group $group." | tee -a "$log_file"
+            logs_info "Failed to assign user $users to group $group." 
         fi
     done
 
-    echo "Created user $users with groups $group." | tee -a "$log_file"
+    logs_info "Created user $users with groups $group." 
 
 
     # Set permissions and ownership for the home directory
     chmod 700 "/home/$users"
     chown "$users:$users" "/home/$users"
-    echo "Set permissions for /home/$users." | tee -a "$log_file"
+    logs_info "Set permissions for /home/$users." 
 
 
 
@@ -143,10 +151,10 @@ create_users_groups(){
     passwords=$(generate_password)
     echo "$users:$passwords" | chpasswd
     if [ $? -ne 0 ]; then
-        echo "Failed to set password for $user." | tee -a "$log_file"
+        logs_info "Failed to set password for $user." 
         return 1
     fi
-    echo "Generated password for $users." | tee -a "$log_file"
+    logs_info "Generated password for $users." 
 
 
 
@@ -188,6 +196,6 @@ while IFS=';' read -r users groups; do
     create_users_groups "$users" "$groups"
 done <  <(cat "$list_of_users"; echo)   # Ensure last line is processed                                            
 
-echo "User creation process completed." | tee -a "$log_file"
+logs_info "User creation process completed." 
 
 exit 0
