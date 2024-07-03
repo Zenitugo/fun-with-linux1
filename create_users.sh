@@ -2,7 +2,7 @@
 
 
 
-list_of_users="/home/zenitugo/users.txt"
+list_of_users="/workspaces no/users.txt"
 log_dir="/var/log"
 log_file="/var/log/user_management.log"
 password_dir="/var/secure"
@@ -142,12 +142,16 @@ create_users_groups(){
     local passwords
     passwords=$(generate_password)
     echo "$users:$passwords" | chpasswd
+    if [ $? -ne 0 ]; then
+        echo "Failed to set password for $user." | tee -a "$log_file"
+        return 1
+    fi
     echo "Generated password for $users." | tee -a "$log_file"
 
 
 
     # Store the password securely
-    echo "$users:$passwords" >> "$password_manager"
+    echo "$users,$passwords" >> "$password_manager"
 
     
 
