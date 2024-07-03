@@ -2,7 +2,7 @@
 
 
 
-list_of_users="/workspaces no/users.txt"
+list_of_users="/home/zenitugo/users.txt"
 log_dir="/var/log"
 log_file="/var/log/user_management.log"
 password_dir="/var/secure"
@@ -80,8 +80,8 @@ create_users_groups(){
     fi
 
      
-    # Create personal groups
-    Create personal group with the same name as the user
+    
+    # Create personal group with the same name as the user
     if ! getent group "$users" &>/dev/null; then
         groupadd "$users"
         if [[ $? -eq 0 ]]; then
@@ -186,7 +186,7 @@ while IFS=';' read -r users groups; do
         continue
     fi
     create_users_groups "$users" "$groups"
-done < "$list_of_users"
+done <  <(cat "$list_of_users"; echo)   # Ensure last line is processed                                            
 
 echo "User creation process completed." | tee -a "$log_file"
 
