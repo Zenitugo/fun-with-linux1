@@ -50,7 +50,7 @@ chmod -R 755 "$log_file"
 # Clear previous logs and initialize the password CSV file with a header
 > "$log_file"
 echo "username,password" > "$password_manager"
-chmod 600 "$password_manager"
+chmod 600 "$password_manager"  # Only the admin should have access to password files. 
 
 
 # Generate random password function for users
@@ -58,11 +58,16 @@ chmod 600 "$password_manager"
     #tr -dc A-Za-z0-9 </dev/urandom | head -c 12
 #}
 generate_password(){
-    urandom_data=$(head -c 32 /dev/urandom)
+    # generates a 32-character random password
+    urandom_data=$(head -c 32 /dev/urandom) 
+    # Allows the 32-character random password to be encrypted allows `tr` to retrieve the alphanumeric characters and reduces the character to 12.
+    # We don't start with generating a 12-character password because when it passes through `tr` it might not be up to 12. For security purposes the password
+    # should be maximum of 12 characters.
     password=$(echo "$urandom_data" | openssl base64 | tr -dc A-Za-z0-9 | head -c 12)
     echo "$password"
 }
 
+# This function is used to create logs with time and date timestamps for verification purposes
 logs_info(){
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_file"
 }
