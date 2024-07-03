@@ -111,13 +111,16 @@ create_users_groups(){
     echo "Created user $users with groups $groups."
 
     
-  
-    # Create the user with the specified groups
-    if usermod -aG "$group" "$users"; then
-        echo "Group "$group" assigned to user "$users""
-    else
-        echo "Group "$group" already assigned to user "$users""
-    fi
+  # Add the user to additional groups
+    IFS=',' read -ra group_list <<< "$groups"
+    for group in "${group_list[@]}"; do
+        usermod -aG "$group" "$users"
+        if [[ $? -eq 0 ]]; then
+            echo "Assigned user $users to group $group." | tee -a "$log_file"
+        else
+            echo "Failed to assign user $users to group $group." | tee -a "$log_file"
+        fi
+    done
 
     echo "Created user $users with groups $group." | tee -a "$log_file"
 
