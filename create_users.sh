@@ -131,7 +131,7 @@ create_users_groups(){
 
     # Generate a random password for the user
     local passwords
-    passwords=$(generate_password())
+    passwords=$(generate_password)cl
     echo "$users:$passwords" | chpasswd
     echo "Generated password for $users." | tee -a "$log_file"
 
